@@ -13,20 +13,22 @@ class RBackup
   
   USAGE
   
-  attr_accessor :profiles, :yaml
+  attr_accessor :profiles, :yaml, :args, :names
   
-  def initialize(reverse, *args)
+  def initialize(reverse, yaml_file, *args)
     @reverse = reverse
-    get_yaml
-    get_profiles(args, @yaml)
+    @yaml_file = yaml_file
+    @args = args
   end
   
-  def get_profiles(input, hash, force=false)
+  def get_profiles(input=@args, hash=@yaml, force=false)
     @profiles ||= []
+    @names ||= []
     hash.each do |key, value|
       next unless value.respond_to?(:keys)
       is_profile = value['source'] && value['destination']
-      if input.include?(key) || input.empty? || force
+      @names << key
+      if @args.include?(key) || @args.empty? || force
         if is_profile
           @profiles << value
         else
@@ -36,13 +38,14 @@ class RBackup
         get_profiles(input, value, force)
       end
     end
+    @names
   end
   
   def get_yaml
     if $rbackup_config
       config = $rbackup_config
     else
-      config = File.expand_path("~/.rbackup.yml")
+      config = File.expand_path(@yaml_file)
     end
     if File.exists?(config)
       @yaml = File.open(config)
@@ -123,6 +126,8 @@ class RBackup
   end
   
   def run
+    get_yaml if @yaml_file
+    get_profiles
     @profiles.each do |profile|
       rsync(profile)
     end
