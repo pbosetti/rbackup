@@ -66,7 +66,7 @@ class RBackup
     paths.collect  { |path| path.gsub(' ', '\ ') }.join(' ')
   end
   
-  def rsync(profile)
+  def make_cmd(profile)
     inc1ude = []
     exclude = []
     destination = profile['destination']
@@ -116,9 +116,15 @@ class RBackup
     # --exclude=PATTERN         use one of these for each file you want to exclude
     # --include-from=FILE       don't exclude patterns listed in FILE
 
-    cmd = "rsync #{options} #{inc1ude} #{exclude} #{esc(source)} #{esc(destination)}"
+    "rsync #{options} #{inc1ude} #{exclude} #{esc(source)} #{esc(destination)}"
+    args = [options, inc1ude, exclude, esc(source), esc(destination)]
+  end
+  
+  def rsync(profile)
+    cmd = "rsync " + (make_cmd(profile) * " ")
     if $TESTING
       `#{cmd}`
+      "Executing: #{cmd}\n"
     else
       puts "Executing: #{cmd}"
       system(cmd)
